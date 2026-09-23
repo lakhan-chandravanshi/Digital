@@ -10,7 +10,14 @@ const app = express();
 const port = Number(process.env.PORT ?? 4000);
 const api = "/api/v1";
 const frontendUrl = process.env.FRONTEND_URL ?? "https://digital676.netlify.app";
-app.use(cors({ origin: true }));
+const corsOptions = {
+  origin: true,
+  credentials: true,
+  methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+  allowedHeaders: ["X-Requested-With", "Content-Type", "Authorization", "Accept"],
+};
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 
 const credentials = z.object({ email: z.string().email(), password: z.string().min(8) });
 const signupInput = credentials.extend({ charityId: z.string().min(1).optional(), contributionPercentage: z.coerce.number().min(10).max(100).optional() }).refine((value) => !value.contributionPercentage || value.charityId, { message: "charityId is required when setting a contribution" });
