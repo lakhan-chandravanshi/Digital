@@ -178,7 +178,7 @@ app.post(`${api}/charities/select`, requireUser, requireActiveSubscriber, asyncR
   if (!parsed.success) return response.status(400).json({ message: "Choose a charity and a contribution of at least 10%." });
   return response.json({ setting: await prisma.userCharitySetting.upsert({ where: { userId: response.locals.user.id }, create: { userId: response.locals.user.id, ...parsed.data }, update: parsed.data }) });
 }));
-app.get(`${api}/charities/my-setting`, requireUser, requireActiveSubscriber, asyncRoute(async (_request, response) => response.json({ setting: await prisma.userCharitySetting.findUnique({ where: { userId: response.locals.user.id }, include: { charity: true } }) })));
+app.get(`${api}/charities/my-setting`, requireUser, requireActiveSubscriber, asyncRoute(async (_request, response) => { const setting = await prisma.userCharitySetting.findUnique({ where: { userId: response.locals.user.id }, include: { charity: true } }); return response.json({ setting }); }));
 app.post(`${api}/charities/donate`, requireUser, requireActiveSubscriber, asyncRoute(async (request, response) => {
   const parsed = z.object({ charityId: z.string(), amount: z.coerce.number().positive() }).safeParse(request.body);
   if (!parsed.success) return response.status(400).json({ message: "A charity and positive donation amount are required." });
