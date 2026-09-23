@@ -10,14 +10,30 @@ const app = express();
 const port = Number(process.env.PORT ?? 4000);
 const api = "/api/v1";
 const frontendUrl = process.env.FRONTEND_URL ?? "https://digital676.netlify.app";
+
+// 1. Dynamic Allowed Origins Handling
+const allowedOrigins = [
+  "https://digital676.netlify.app",
+  "http://localhost:5173",
+  "http://localhost:3000",
+  frontendUrl
+].filter(Boolean);
+
 const corsOptions = {
-  origin: true,
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Avoid strict blockage during phase testing
+    }
+  },
   credentials: true,
   methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
   allowedHeaders: ["X-Requested-With", "Content-Type", "Authorization", "Accept"],
 };
+
 app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 const credentials = z.object({ email: z.string().email(), password: z.string().min(8) });
 const signupInput = credentials.extend({ charityId: z.string().min(1).optional(), contributionPercentage: z.coerce.number().min(10).max(100).optional() }).refine((value) => !value.contributionPercentage || value.charityId, { message: "charityId is required when setting a contribution" });
@@ -53,7 +69,8 @@ app.post(`${api}/subscriptions/webhook`, express.raw({ type: "application/json" 
   }
   return response.json({ received: true });
 }));
-app.use(express.json({ limit: "5mb" }));
+
+app.use(express.json({ limit: "4.5mb" }));
 
 app.get("/health", (_request, response) => response.json({ status: "ok", service: "digital-heroes-api" }));
 
@@ -89,7 +106,6 @@ app.post(`${api}/subscriptions/checkout`, requireUser, asyncRoute(async (request
   const plan = z.enum(["MONTHLY", "YEARLY"]).safeParse(request.body?.planType);
   if (!plan.success) return response.status(400).json({ message: "planType must be MONTHLY or YEARLY." });
   
-  // Mock payment mode - create subscription directly without Stripe
   if (useMockPayments) {
     const renewalDate = new Date();
     renewalDate.setMonth(renewalDate.getMonth() + (plan.data === "YEARLY" ? 12 : 1));
@@ -113,7 +129,6 @@ app.post(`${api}/subscriptions/checkout`, requireUser, asyncRoute(async (request
     return response.json({ success: true, mock: true, subscription });
   }
   
-  // Real Stripe integration
   if (!stripe) return response.status(503).json({ message: "Stripe is not configured." });
   const price = plan.data === "YEARLY" ? process.env.STRIPE_YEARLY_PRICE_ID : process.env.STRIPE_MONTHLY_PRICE_ID;
   if (!price) return response.status(503).json({ message: "Stripe price IDs are not configured." });
@@ -274,5 +289,19 @@ app.get(`${api}/admin/analytics`, requireUser, requireAdmin, asyncRoute(async (_
   return response.json({ totalUsers, totalPrizePool: pool._sum.totalPoolAmount ?? 0, charityTotals, drawStats: { published } });
 }));
 
+// Express Global Error Handler (CORS Header Protection)
+app.use((err: any, req: Request, res: Response, _next: any) => {
+  res.header("Access-Control-Allow-Origin", req.headers.origin || "https://digital676.netlify.app");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.status(500).json({ message: err.message || "Internal Server Error" });
+});
+
 app.use((_request, response) => response.status(404).json({ message: "Route not found" }));
-connectDatabase().then(() => app.listen(port, () => console.log(`Digital Heroes API listening on http://localhost:${port}`))).catch((error) => { console.error("DB connection failed", error); process.exitCode = 1; });
+
+if (process.env.NODE_ENV !== "production") {
+  connectDatabase().then(() => app.listen(port, () => console.log(`Digital Heroes API listening on http://localhost:${port}`)));
+} else {
+  connectDatabase();
+}
+
+export default app;
