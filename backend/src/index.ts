@@ -124,7 +124,7 @@ app.post(`${api}/scores`, requireUser, requireActiveSubscriber, asyncRoute(async
   if (!parsed.success) return response.status(400).json({ message: "Score must be an integer from 1 to 45 with a valid date." });
   const scoreDate = day(parsed.data.scoreDate);
   try {
-    const score = await prisma.$transaction(async (transaction) => {
+    const score = await prisma.$transaction(async (transaction: any) => {
       const duplicate = await transaction.score.findUnique({ where: { userId_scoreDate: { userId: response.locals.user.id, scoreDate } } });
       if (duplicate) throw new Error("DUPLICATE_SCORE_DATE");
       const count = await transaction.score.count({ where: { userId: response.locals.user.id } });
