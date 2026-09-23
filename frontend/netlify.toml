@@ -4,7 +4,7 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  NEXT_PUBLIC_API_URL = "https://backend-3g823y31y-lakhan-chandravanshis-projects.vercel.app/api/v1"
+  NEXT_PUBLIC_API_URL = "https://backend-beta-ten-t6mhx1k4pi.vercel.app/api/v1"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 type Charity = { id: string; title: string; description: string; spotlightFlag: boolean };
-const api = process.env.NEXT_PUBLIC_API_URL ?? "https://digital-heroes-backend.vercel.app/api/v1";
+const api = process.env.NEXT_PUBLIC_API_URL ?? "https://backend-beta-ten-t6mhx1k4pi.vercel.app/api/v1";
 
 export default function CharitiesPage() {
   const [charities, setCharities] = useState<Charity[]>([]);
