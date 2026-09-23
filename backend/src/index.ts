@@ -222,7 +222,7 @@ app.post(`${api}/admin/draws/publish`, requireUser, requireAdmin, asyncRoute(asy
   const active = await prisma.user.findMany({ where: { subscription: { status: "ACTIVE" } }, include: { scores: { orderBy: { scoreDate: "desc" }, take: 5 } } });
   if (!active.length) return response.status(400).json({ message: "At least one active subscriber is required." });
   const frequency = new Map<number, number>();
-  active.flatMap((user) => user.scores).forEach((score) => frequency.set(score.scoreValue, (frequency.get(score.scoreValue) ?? 0) + 1));
+  active.flatMap((user: any) => user.scores).forEach((score: any) => frequency.set(score.scoreValue, (frequency.get(score.scoreValue) ?? 0) + 1));
   const numbers: number[] = [];
   while (numbers.length < 5) {
     const candidates = Array.from({ length: 45 }, (_, index) => index + 1).filter((number) => !numbers.includes(number));
@@ -233,10 +233,10 @@ app.post(`${api}/admin/draws/publish`, requireUser, requireAdmin, asyncRoute(asy
   const pool = active.length * poolAmount();
   const previous = await prisma.draw.findFirst({ where: { status: "PUBLISHED" }, orderBy: { drawDate: "desc" } });
   const rollover = Number(previous?.rolloverAmount ?? 0);
-  const matches = active.flatMap((user) => { const matchedScores = user.scores.filter((score) => numbers.includes(score.scoreValue)).length; return matchedScores ? [{ userId: user.id, matches: matchedScores }] : []; });
-  const five = matches.filter((match) => match.matches === 5); const four = matches.filter((match) => match.matches === 4); const three = matches.filter((match) => match.matches === 3);
+  const matches = active.flatMap((user: any) => { const matchedScores = user.scores.filter((score: any) => numbers.includes(score.scoreValue)).length; return matchedScores ? [{ userId: user.id, matches: matchedScores }] : []; });
+  const five = matches.filter((match: any) => match.matches === 5); const four = matches.filter((match: any) => match.matches === 4); const three = matches.filter((match: any) => match.matches === 3);
   const fivePool = pool * shares.five + rollover; const rolloverAmount = five.length ? 0 : fivePool;
-  const draw = await prisma.$transaction(async (transaction) => {
+  const draw = await prisma.$transaction(async (transaction: any) => {
     const created = await transaction.draw.create({ data: { drawDate: new Date(), status: "PUBLISHED", drawLogic: logic, winningNumbers: numbers, totalPoolAmount: pool, rolloverAmount } });
     for (const [tier, winners, amount] of [["FIVE_MATCH", five, fivePool], ["FOUR_MATCH", four, pool * shares.four], ["THREE_MATCH", three, pool * shares.three]] as const) for (const winner of winners) await transaction.winner.create({ data: { drawId: created.id, userId: winner.userId, matchType: tier, prizeAmount: amount / winners.length } });
     return created;
