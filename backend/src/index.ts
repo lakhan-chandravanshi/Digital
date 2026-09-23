@@ -11,29 +11,29 @@ const port = Number(process.env.PORT ?? 4000);
 const api = "/api/v1";
 const frontendUrl = process.env.FRONTEND_URL ?? "https://digital676.netlify.app";
 
-// 1. Dynamic Allowed Origins Handling
-const allowedOrigins = [
-  "https://digital676.netlify.app",
-  "http://localhost:5173",
-  "http://localhost:3000",
-  frontendUrl
-].filter(Boolean);
+// Universal CORS Middleware (Dynamically reflects incoming origin)
+app.use(
+  cors({
+    origin: (origin, callback) => callback(null, origin || "*"),
+    credentials: true,
+    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+    allowedHeaders: ["*"],
+    exposedHeaders: ["*"],
+  })
+);
 
-const corsOptions = {
-  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(null, true); // Avoid strict blockage during phase testing
-    }
-  },
-  credentials: true,
-  methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
-  allowedHeaders: ["X-Requested-With", "Content-Type", "Authorization", "Accept"],
-};
+// Express Preflight & Global Header Handling (Safe for all environments)
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Methods", "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "*");
 
-app.use(cors(corsOptions));
-// app.options("*", cors(corsOptions));
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+  next();
+});
 
 const credentials = z.object({ email: z.string().email(), password: z.string().min(8) });
 const signupInput = credentials.extend({ charityId: z.string().min(1).optional(), contributionPercentage: z.coerce.number().min(10).max(100).optional() }).refine((value) => !value.contributionPercentage || value.charityId, { message: "charityId is required when setting a contribution" });
@@ -289,9 +289,9 @@ app.get(`${api}/admin/analytics`, requireUser, requireAdmin, asyncRoute(async (_
   return response.json({ totalUsers, totalPrizePool: pool._sum.totalPoolAmount ?? 0, charityTotals, drawStats: { published } });
 }));
 
-// Express Global Error Handler (CORS Header Protection)
+// Express Global Error Handler (Guarantees CORS Headers even on 500 error)
 app.use((err: any, req: Request, res: Response, _next: any) => {
-  res.header("Access-Control-Allow-Origin", req.headers.origin || "https://digital676.netlify.app");
+  res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
   res.header("Access-Control-Allow-Credentials", "true");
   res.status(500).json({ message: err.message || "Internal Server Error" });
 });
