@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 type Draw = { id: string; drawDate: string; winningNumbers: number[]; totalPoolAmount: string; rolloverAmount: string; drawLogic: string };
-const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
+const api = process.env.NEXT_PUBLIC_API_URL ?? "https://digital-heroes-backend.vercel.app/api/v1";
 
 export default function DrawsPage() {
   const [draws, setDraws] = useState<Draw[]>([]);

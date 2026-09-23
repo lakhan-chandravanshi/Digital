@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import styles from "./auth.module.css";
 
-const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
+const api = process.env.NEXT_PUBLIC_API_URL ?? "https://digital-heroes-backend.vercel.app/api/v1";
 type AuthMode = "login" | "signup";
 
 export default function AuthPage() {

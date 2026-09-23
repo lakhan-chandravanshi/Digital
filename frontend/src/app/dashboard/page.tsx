@@ -8,7 +8,7 @@ type Setting = { contributionPercentage: string; charity: { title: string } } | 
 type Draw = { drawDate: string | null; prizePoolEstimate: number };
 type Winner = { id: string; prizeAmount: string; payoutStatus: string; matchType: string; proofImageUrl?: string };
 type Charity = { id: string; title: string; description: string };
-const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
+const api = process.env.NEXT_PUBLIC_API_URL ?? "https://digital-heroes-backend.vercel.app/api/v1";
 
 export default function Dashboard() {
   const [scores, setScores] = useState<Score[]>([]);

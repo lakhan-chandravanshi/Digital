@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 
-const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
+const api = process.env.NEXT_PUBLIC_API_URL ?? "https://digital-heroes-backend.vercel.app/api/v1";
 type Analytics = { totalUsers: number; totalPrizePool: number; drawStats: { published: number } };
 type Winner = { id: string; matchType: string; prizeAmount: string; user: { email: string } };
 type Charity = { id: string; title: string; description: string; spotlightFlag: boolean };
