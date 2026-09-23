@@ -1,0 +1,2 @@
+ALTER TABLE "Score" ADD CONSTRAINT "Score_scoreValue_range" CHECK ("scoreValue" BETWEEN 1 AND 45);
+ALTER TABLE "UserCharitySetting" ADD CONSTRAINT "UserCharitySetting_contributionPercentage_min" CHECK ("contributionPercentage" >= 10 AND "contributionPercentage" <= 100);

@@ -1,0 +1,25 @@
+{
+  "name": "digital",
+  "version": "1.0.0",
+  "description": "Digital Heroes workspace",
+  "private": true,
+  "scripts": { "dev": "npm run dev:frontend", "dev:frontend": "npm --prefix frontend run dev", "dev:backend": "npm --prefix backend run dev", "build:frontend": "npm --prefix frontend run build", "build:backend": "npm --prefix backend run build" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lakhan-chandravanshi/Digital.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lakhan-chandravanshi/Digital/issues"
+  },
+  "homepage": "https://github.com/lakhan-chandravanshi/Digital#readme",
+  "dependencies": {
+    "@prisma/client": "^7.10.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.2",
+    "express": "^5.2.1",
+    "zod": "^4.6.5"
+  }
+}

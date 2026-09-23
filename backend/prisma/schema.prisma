@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SUBSCRIBER
+  ADMIN
+}
+enum PlanType {
+  MONTHLY
+  YEARLY
+}
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  CANCELED
+  PAST_DUE
+}
+enum DrawStatus {
+  SIMULATED
+  PUBLISHED
+}
+enum DrawLogic {
+  RANDOM
+  WEIGHTED
+}
+enum MatchType {
+  FIVE_MATCH
+  FOUR_MATCH
+  THREE_MATCH
+}
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+enum PayoutStatus {
+  PENDING
+  PAID
+}
+
+model User {
+  id String @id @default(cuid())
+  email String @unique
+  passwordHash String
+  role Role @default(SUBSCRIBER)
+  createdAt DateTime @default(now())
+  subscription Subscription?
+  scores Score[]
+  charitySettings UserCharitySetting[]
+  winners Winner[]
+  donations Donation[]
+}
+
+model Subscription {
+  id String @id @default(cuid())
+  userId String @unique
+  stripeCustomerId String? @unique
+  stripeSubscriptionId String? @unique
+  status SubscriptionStatus @default(INACTIVE)
+  planType PlanType
+  renewalDate DateTime?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Score {
+  id String @id @default(cuid())
+  userId String
+  scoreValue Int
+  scoreDate DateTime @db.Date
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, scoreDate])
+  @@index([userId, scoreDate])
+}
+
+model Charity {
+  id String @id @default(cuid())
+  title String
+  description String
+  imageUrl String?
+  spotlightFlag Boolean @default(false)
+  createdAt DateTime @default(now())
+  settings UserCharitySetting[]
+  donations Donation[]
+  events CharityEvent[]
+  @@unique([title])
+}
+
+model CharityEvent {
+  id String @id @default(cuid())
+  charityId String
+  title String
+  description String
+  eventDate DateTime
+  location String?
+  createdAt DateTime @default(now())
+  charity Charity @relation(fields: [charityId], references: [id], onDelete: Cascade)
+  @@index([charityId, eventDate])
+}
+
+model Donation {
+  id String @id @default(cuid())
+  userId String?
+  charityId String
+  amount Decimal @db.Decimal(12, 2)
+  createdAt DateTime @default(now())
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  charity Charity @relation(fields: [charityId], references: [id], onDelete: Cascade)
+  @@index([charityId, createdAt])
+}
+
+model UserCharitySetting {
+  id String @id @default(cuid())
+  userId String
+  charityId String
+  contributionPercentage Decimal @db.Decimal(5, 2)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  charity Charity @relation(fields: [charityId], references: [id], onDelete: Cascade)
+  @@unique([userId])
+}
+
+model Draw {
+  id String @id @default(cuid())
+  drawDate DateTime
+  status DrawStatus
+  drawLogic DrawLogic
+  winningNumbers Int[]
+  totalPoolAmount Decimal @db.Decimal(12, 2)
+  rolloverAmount Decimal @db.Decimal(12, 2) @default(0)
+  winners Winner[]
+}
+
+model Winner {
+  id String @id @default(cuid())
+  drawId String
+  userId String
+  matchType MatchType
+  prizeAmount Decimal @db.Decimal(12, 2)
+  proofImageUrl String?
+  verificationStatus VerificationStatus @default(PENDING)
+  payoutStatus PayoutStatus @default(PENDING)
+  draw Draw @relation(fields: [drawId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([verificationStatus, payoutStatus])
+}
