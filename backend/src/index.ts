@@ -9,7 +9,8 @@ import { createToken, hashPassword, requireActiveSubscriber, requireAdmin, requi
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
 const api = "/api/v1";
-app.use(cors({ origin: process.env.FRONTEND_URL ?? "http://localhost:3000" }));
+const frontendUrl = process.env.FRONTEND_URL ?? "https://digital676.netlify.app";
+app.use(cors({ origin: true }));
 
 const credentials = z.object({ email: z.string().email(), password: z.string().min(8) });
 const signupInput = credentials.extend({ charityId: z.string().min(1).optional(), contributionPercentage: z.coerce.number().min(10).max(100).optional() }).refine((value) => !value.contributionPercentage || value.charityId, { message: "charityId is required when setting a contribution" });
@@ -110,7 +111,7 @@ app.post(`${api}/subscriptions/checkout`, requireUser, asyncRoute(async (request
   const price = plan.data === "YEARLY" ? process.env.STRIPE_YEARLY_PRICE_ID : process.env.STRIPE_MONTHLY_PRICE_ID;
   if (!price) return response.status(503).json({ message: "Stripe price IDs are not configured." });
   try {
-    const session = await stripe.checkout.sessions.create({ mode: "subscription", line_items: [{ price: price.trim(), quantity: 1 }], customer_email: response.locals.user.email, metadata: { userId: response.locals.user.id, planType: plan.data }, success_url: `${process.env.FRONTEND_URL ?? "http://localhost:3000"}/dashboard?payment=success`, cancel_url: `${process.env.FRONTEND_URL ?? "http://localhost:3000"}/dashboard?payment=cancelled` });
+    const session = await stripe.checkout.sessions.create({ mode: "subscription", line_items: [{ price: price.trim(), quantity: 1 }], customer_email: response.locals.user.email, metadata: { userId: response.locals.user.id, planType: plan.data }, success_url: `${frontendUrl}/dashboard?payment=success`, cancel_url: `${frontendUrl}/dashboard?payment=cancelled` });
     return response.json({ checkoutUrl: session.url });
   } catch (error) {
     console.error("Stripe checkout error", error instanceof Error ? error.message : error);
@@ -168,6 +169,7 @@ app.get(`${api}/charities`, asyncRoute(async (request, response) => {
   return response.json({ charities, pagination: { page, limit, total, pages: Math.ceil(total / limit) } });
 }));
 app.get(`${api}/charities/spotlight`, asyncRoute(async (_request, response) => response.json({ charities: await prisma.charity.findMany({ where: { spotlightFlag: true }, take: 3 }) })));
+app.get(`${api}/charities/my-setting`, requireUser, requireActiveSubscriber, asyncRoute(async (_request, response) => { const setting = await prisma.userCharitySetting.findUnique({ where: { userId: response.locals.user.id }, include: { charity: true } }); return response.status(200).json({ setting }); }));
 app.get(`${api}/charities/:id/events`, asyncRoute(async (request, response) => response.json({ events: await prisma.charityEvent.findMany({ where: { charityId: routeId(request) }, orderBy: { eventDate: "asc" } }) })));
 app.get(`${api}/charities/:id`, asyncRoute(async (request, response) => {
   const charity = await prisma.charity.findUnique({ where: { id: routeId(request) }, include: { events: { orderBy: { eventDate: "asc" } } } });
@@ -178,7 +180,6 @@ app.post(`${api}/charities/select`, requireUser, requireActiveSubscriber, asyncR
   if (!parsed.success) return response.status(400).json({ message: "Choose a charity and a contribution of at least 10%." });
   return response.json({ setting: await prisma.userCharitySetting.upsert({ where: { userId: response.locals.user.id }, create: { userId: response.locals.user.id, ...parsed.data }, update: parsed.data }) });
 }));
-app.get(`${api}/charities/my-setting`, requireUser, requireActiveSubscriber, asyncRoute(async (_request, response) => { const setting = await prisma.userCharitySetting.findUnique({ where: { userId: response.locals.user.id }, include: { charity: true } }); return response.json({ setting }); }));
 app.post(`${api}/charities/donate`, requireUser, requireActiveSubscriber, asyncRoute(async (request, response) => {
   const parsed = z.object({ charityId: z.string(), amount: z.coerce.number().positive() }).safeParse(request.body);
   if (!parsed.success) return response.status(400).json({ message: "A charity and positive donation amount are required." });
